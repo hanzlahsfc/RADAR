@@ -1,0 +1,4 @@
+# pnpm 11 reads this from pnpm-workspace.yaml.
+# esbuild ships a native binary via a postinstall script; allow it to build.
+allowBuilds:
+  esbuild: true

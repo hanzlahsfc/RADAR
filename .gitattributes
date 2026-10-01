@@ -1,0 +1,12 @@
+* text=auto eol=lf
+
+# Windows batch / PowerShell should keep CRLF
+*.cmd text eol=crlf
+*.bat text eol=crlf
+*.ps1 text eol=crlf
+
+# Binary
+*.png binary
+*.jpg binary
+*.pdf binary
+*.exe binary

@@ -1,0 +1,8 @@
+dist
+node_modules
+coverage
+.vitest
+pnpm-lock.yaml
+drizzle
+radar prompt.md
+*.md

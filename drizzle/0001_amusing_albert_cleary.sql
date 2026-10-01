@@ -1,0 +1,4 @@
+ALTER TABLE "watched_wallets" ADD CONSTRAINT "watched_wallets_id_account_key" UNIQUE("id","account_id");--> statement-breakpoint
+ALTER TABLE "alert_rules" ADD CONSTRAINT "alert_rules_id_watch_key" UNIQUE("id","watch_id");--> statement-breakpoint
+ALTER TABLE "alert_outbox" ADD CONSTRAINT "alert_outbox_watch_account_fk" FOREIGN KEY ("watch_id","account_id") REFERENCES "public"."watched_wallets"("id","account_id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "alert_outbox" ADD CONSTRAINT "alert_outbox_rule_watch_fk" FOREIGN KEY ("rule_id","watch_id") REFERENCES "public"."alert_rules"("id","watch_id") ON DELETE cascade ON UPDATE no action;

@@ -1,0 +1,24 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: radar-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: radar
+      POSTGRES_PASSWORD: radar
+      POSTGRES_DB: radar
+    # Host port 5433 avoids clashing with other local PostgreSQL instances
+    # (the default 5432 is frequently already in use by another project).
+    ports:
+      - '5433:5432'
+    volumes:
+      - radar-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U radar -d radar']
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+volumes:
+  radar-pgdata:
