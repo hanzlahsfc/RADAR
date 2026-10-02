@@ -39,10 +39,34 @@ The documented authenticated candidate is Blockscout PRO API. For a registered k
 - `GET https://api.blockscout.com/4663/api/v2/addresses/{address}/token-transfers?apikey=...`
 - `GET https://api.blockscout.com/4663/api/v2/addresses/{address}/internal-transactions?apikey=...`
 
-The PRO API documentation says an API key is required even on its free tier. Transaction discovery and token transfers are separate streams; internal transactions are separate as well. The published v2 schema describes cursor pagination using `next_page_params`, but this project has not yet made authenticated requests to these routes. No live page, completeness boundary, retention depth, exact rate/record limits for the needed endpoints, or token-only coverage has been verified. Therefore this is a documented provider candidate, not an enabled or verified history source.
+The PRO API documentation says an API key is required even on its free tier. Transaction discovery and token transfers are separate streams; internal transactions are separate as well. The published v2 schema describes cursor pagination using `next_page_params`, the current adapter uses the documented Etherscan-compatible PRO route rather than REST cursors. Authenticated connectivity and cursor continuation were previously checked. On 2026-10-02 at 11:48:54 UTC the expanded verifier completed the following read-only check:
+
+| Evidence | Observation |
+|---|---|
+| Tested address | `0x7300d92984d11323e7855ab69b0a4d6613a3ff01` |
+| Configured API | `https://api.blockscout.com/v2/api?chainid=4663`, local key redacted |
+| Fixed window | 2026-09-29T11:48:19.438Z through 2026-10-02T11:48:19.438Z |
+| Pagination | 8 merged pages, 50 records per active stream per page; continuation accepted; both streams completed |
+| Candidates | 340 occurrences, 203 unique transaction hashes |
+| Known token-only transaction | `0x9485ae07f70df6b8ea65a608425d6043cedbd18ddf242f7d5ec2163385fef285` was discovered |
+| Canonical receipt comparison | Success at block 77960830; receipt hash matched RPC block; ERC-20 Transfer involving the tested address |
+| Token contract / block time | `0xfa66f480987d86d8688480207e7ee6590f8cc6bb`, 2026-10-02T04:52:17Z |
+| Token-only distinction | Top-level from `0xef8a2318ca5d773a3af1f1aeee7ccd488f110f4c` and to `0x0c52fde074222c38faaf599e17b729bf352f938d` are both different from the tested address |
+| RPC checks | Chain ID, latest/safe/finalized blocks, known receipt, bounded logs passed |
+| Report | 8 passed, 1 unsupported (internal transactions), 0 failed, 0 skipped |
+
+An earlier attempt returned HTTP 500 from the explorer; a subsequent read-only retry succeeded. This demonstrates an actual provider outage, so completed coverage must not be inferred from failed requests. Another tested transfer was a top-level transaction for this address and correctly failed the token-only assertion.
+
+This establishes a sampled 72-hour provider-completed walk and one independently verified token-only transaction. It does not prove every candidate receipt, every address, all token events, retention depth, or behavior at the provider's record cap. Internal transactions remain unsupported by the adapter.
+
+## Provider limits and finality decision
+
+[Blockscout account module documentation](https://docs.blockscout.com/devs/apis/rpc/account), reviewed 2026-10-02, documents up to 10,000 records for `txlist` and `tokentx`, with `page`/`offset` pagination and optional block bounds. The adapter now rejects a stream reaching that conservative cap before crossing the requested start timestamp. It also rejects malformed records, failure envelopes and invalid cursor state rather than persisting complete coverage. Live limit and retention-depth experiments are still unverified. Blockscout's Robinhood-specific documentation additionally lists a 1,000-record limit for its `txlistinternal` and `eth_getLogs` routes; that claim does not establish the limits of the separate public Robinhood RPC.
+
+Robinhood's official [transaction finality documentation](https://docs.robinhood.com/chain/transaction-finality/), reviewed again 2026-10-02, describes sequencer soft confirmation, batch posting to Ethereum, and Ethereum finality. It does not explicitly map the tested public RPC's `safe` and `finalized` tags to these stages. **Decision:** retain `FINALITY_VERIFIED=false` and keep live indexing disabled until the endpoint's tag mapping is supported by provider evidence. A successful receipt/canonical block comparison establishes observed chain evidence, not economic finality.
 
 ## Enablement gate
 
-Public RPC is rate limited. Authenticated PRO API history remains unverified pending a key and real responses. Pagination, depth, limits, token-only completeness and trace coverage remain blocked/unverified. Native transactions and ERC-20 transfers are separate data sources.
+The sampled authenticated 72-hour walk and known token-only receipt comparison now pass. Arbitrary-address completeness, live record-limit behavior, retention depth, and provider-specific finality mapping remain unverified. Do not enable live indexing or set FINALITY_VERIFIED=true until those checks and the finality decision are complete. Pons requires verified bytecode, ABI version, actual launch receipt and creator association.
 
-Run pnpm verify:network with the provider, known transaction and address. Configure the documented Blockscout PRO base and API key, then verify authenticated transaction and token-transfer responses, walk more than one page (or prove the result is a single complete page), test known examples including token-only activity, and establish historical depth/limits and finality mapping. Record evidence here; only then enable the relevant live features and set FINALITY_VERIFIED=true after the finality decision. A tag response alone is insufficient. Pons requires verified bytecode, ABI version, actual launch receipt and creator association.
+Run `pnpm verify:network` with `VERIFY_ADDRESS`, `VERIFY_TX_HASH`, and `VERIFY_TOKEN_TX_HASH` in the ignored local environment. `VERIFY_HISTORY_MAX_PAGES` defaults to 50 (allowed range 1..500). A budget-exhausted walk reports incomplete coverage; missing or repeated cursors fail. The verifier never sends transactions or enables indexing.

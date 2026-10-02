@@ -5,13 +5,12 @@ import type { HistoryPage, HistoryProvider, HistoryQuery, TransactionCandidate }
 /**
  * A generic, Etherscan-compatible address-history provider.
  *
- * IMPORTANT (Phase 0 honesty): the concrete Robinhood Chain explorer response
- * shape is NOT yet verified. This adapter implements the widely-used
- * Etherscan-style contract (`module=account&action=txlist|tokentx`) and, when a
- * response does not match that shape, raises a ProviderError instead of
- * fabricating or silently returning empty results. The real endpoint, params,
- * pagination limits, and whether token transfers are included must be confirmed
- * by `pnpm verify:network` and recorded in docs/NETWORK_VERIFICATION.md.
+ * Implements the Etherscan-style contract (`module=account&action=txlist|tokentx`).
+ * The configured Blockscout PRO endpoint has passed a sampled 72-hour walk and
+ * token-only receipt comparison; see docs/NETWORK_VERIFICATION.md. Other
+ * providers still require their own shape, limit and coverage verification.
+ * Malformed responses and record-cap truncation raise ProviderError so they
+ * cannot become persisted complete coverage.
  *
  * Two endpoints are queried and merged on purpose: a normal-transactions
  * endpoint (txlist) does NOT include token-only activity, so token transfers
@@ -25,6 +24,8 @@ export interface ExplorerHistoryProviderConfig {
   fetchImpl?: typeof fetch;
   pageSize?: number;
   timeoutMs?: number;
+  /** Conservative cap per stream; Blockscout documents 10,000 records. */
+  maxRecords?: number;
 }
 
 interface ExplorerCursorState {
@@ -59,18 +60,17 @@ function decodeCursor(cursor: string | undefined): ExplorerCursorState {
     const parsed = JSON.parse(
       Buffer.from(cursor, 'base64url').toString('utf8'),
     ) as Partial<ExplorerCursorState>;
-    return {
-      txPage:
-        Number.isInteger(parsed.txPage) && (parsed.txPage as number) > 0
-          ? (parsed.txPage as number)
-          : 1,
-      tokenPage:
-        Number.isInteger(parsed.tokenPage) && (parsed.tokenPage as number) > 0
-          ? (parsed.tokenPage as number)
-          : 1,
-      txDone: parsed.txDone === true,
-      tokenDone: parsed.tokenDone === true,
-    };
+    if (
+      !Number.isSafeInteger(parsed.txPage) ||
+      (parsed.txPage ?? 0) < 1 ||
+      !Number.isSafeInteger(parsed.tokenPage) ||
+      (parsed.tokenPage ?? 0) < 1 ||
+      typeof parsed.txDone !== 'boolean' ||
+      typeof parsed.tokenDone !== 'boolean'
+    ) {
+      throw new Error('Invalid cursor state');
+    }
+    return parsed as ExplorerCursorState;
   } catch (error) {
     throw new ProviderError('Invalid explorer cursor', { retryable: false, cause: error });
   }
@@ -84,8 +84,11 @@ function parseRecord(value: unknown): ParsedRecord | null {
   const timeStamp = record.timeStamp;
   if (typeof hash !== 'string' || !/^0x[0-9a-fA-F]{64}$/.test(hash)) return null;
   if (typeof blockNumber !== 'string' || !/^\d+$/.test(blockNumber)) return null;
-  const seconds = typeof timeStamp === 'string' ? Number(timeStamp) : NaN;
-  const timestamp = Number.isFinite(seconds) ? new Date(seconds * 1000) : new Date(0);
+  if (typeof timeStamp !== 'string' || !/^\d+$/.test(timeStamp)) return null;
+  const seconds = Number(timeStamp);
+  if (!Number.isSafeInteger(seconds)) return null;
+  const timestamp = new Date(seconds * 1000);
+  if (!Number.isFinite(timestamp.getTime())) return null;
   return { hash: hash as `0x${string}`, blockNumber: BigInt(blockNumber), timestamp };
 }
 
@@ -94,6 +97,15 @@ export function createExplorerHistoryProvider(
 ): HistoryProvider {
   const pageSize = config.pageSize ?? 100;
   const timeoutMs = config.timeoutMs ?? 15_000;
+  const maxRecords = config.maxRecords ?? 10_000;
+  if (
+    !Number.isSafeInteger(pageSize) ||
+    pageSize < 1 ||
+    !Number.isSafeInteger(maxRecords) ||
+    maxRecords < 1
+  ) {
+    throw new ProviderError('Explorer page size and record limit must be positive integers');
+  }
   const fetchImpl = config.fetchImpl ?? fetch;
   const base = config.apiBaseUrl.trim().replace(/\/+$/, '');
   if (!base) {
@@ -104,14 +116,22 @@ export function createExplorerHistoryProvider(
     action: 'txlist' | 'tokentx',
     address: Address,
     page: number,
-  ): Promise<{ records: ParsedRecord[]; full: boolean }> {
+    limit: number,
+    fromTimestamp: Date,
+  ): Promise<{ records: ParsedRecord[]; full: boolean; exhaustedByWindow: boolean }> {
+    if ((page - 1) * limit >= maxRecords) {
+      throw new ProviderError('Explorer record limit reached before history boundary', {
+        retryable: false,
+        context: { action, maxRecords },
+      });
+    }
     const url = new URL(base);
     url.searchParams.set('module', 'account');
     url.searchParams.set('action', action);
     url.searchParams.set('address', address);
     url.searchParams.set('page', String(page));
-    url.searchParams.set('offset', String(pageSize));
-    url.searchParams.set('sort', 'asc');
+    url.searchParams.set('offset', String(limit));
+    url.searchParams.set('sort', 'desc');
     if (config.apiKey) url.searchParams.set('apikey', config.apiKey);
 
     const controller = new AbortController();
@@ -150,19 +170,65 @@ export function createExplorerHistoryProvider(
       });
     }
 
-    const result = (body as { result?: unknown }).result;
+    if (typeof body !== 'object' || body === null) {
+      throw new ProviderError('Explorer history returned an invalid envelope');
+    }
+    const envelope = body as { status?: unknown; message?: unknown; result?: unknown };
+    const result = envelope.result;
+    const noRecords = [envelope.message, result].some(
+      (value) => typeof value === 'string' && NO_RECORD_MESSAGES.includes(value.toLowerCase()),
+    );
+    if (
+      envelope.status === '0' &&
+      !(noRecords && (typeof result === 'string' || (Array.isArray(result) && result.length === 0)))
+    ) {
+      throw new ProviderError(
+        typeof result === 'string' && /rate limit/i.test(result)
+          ? 'Rate limit exceeded by explorer history'
+          : 'Explorer history returned a failure status',
+        {
+          retryable: false,
+          context: { action },
+        },
+      );
+    }
     if (Array.isArray(result)) {
-      const records = result.map(parseRecord).filter((r): r is ParsedRecord => r !== null);
-      return { records, full: result.length >= pageSize };
+      const parsed = result.map(parseRecord);
+      if (parsed.some((record) => record === null)) {
+        throw new ProviderError('Explorer history contains a malformed record', {
+          retryable: false,
+          context: { action },
+        });
+      }
+      const records = parsed as ParsedRecord[];
+      const oldest = records.reduce<Date | undefined>(
+        (value, record) => (!value || record.timestamp < value ? record.timestamp : value),
+        undefined,
+      );
+      const exhaustedByWindow = oldest !== undefined && oldest < fromTimestamp;
+      if (!exhaustedByWindow && (page - 1) * limit + result.length >= maxRecords) {
+        throw new ProviderError('Explorer record limit reached before history boundary', {
+          retryable: false,
+          context: { action, maxRecords },
+        });
+      }
+      return {
+        records,
+        full: result.length >= limit,
+        exhaustedByWindow,
+      };
     }
     if (typeof result === 'string') {
-      if (NO_RECORD_MESSAGES.some((message) => result.toLowerCase().includes(message))) {
-        return { records: [], full: false };
+      if (NO_RECORD_MESSAGES.includes(result.toLowerCase())) {
+        return { records: [], full: false, exhaustedByWindow: false };
       }
-      throw new ProviderError(`Explorer history returned an unexpected message: ${result}`, {
-        retryable: false,
-        context: { action },
-      });
+      throw new ProviderError(
+        'Explorer history returned an unexpected message (possibly rate limit exceeded)',
+        {
+          retryable: false,
+          context: { action },
+        },
+      );
     }
     throw new ProviderError(
       'Explorer history response did not match the expected shape (missing array result)',
@@ -173,15 +239,21 @@ export function createExplorerHistoryProvider(
   return {
     kind: 'explorer',
     async getAddressHistory(query: HistoryQuery): Promise<HistoryPage> {
+      if (!Number.isSafeInteger(query.limit) || query.limit < 2) {
+        throw new ProviderError('Explorer history page limit must be an integer of at least 2', {
+          retryable: false,
+        });
+      }
+      const streamLimit = Math.min(pageSize, Math.floor(query.limit / 2));
       const state = decodeCursor(query.cursor);
       const address: Address = query.address;
 
       const fromTx = state.txDone
-        ? { records: [] as ParsedRecord[], full: false }
-        : await fetchStream('txlist', address, state.txPage);
+        ? { records: [] as ParsedRecord[], full: false, exhaustedByWindow: false }
+        : await fetchStream('txlist', address, state.txPage, streamLimit, query.fromTimestamp);
       const fromToken = state.tokenDone
-        ? { records: [] as ParsedRecord[], full: false }
-        : await fetchStream('tokentx', address, state.tokenPage);
+        ? { records: [] as ParsedRecord[], full: false, exhaustedByWindow: false }
+        : await fetchStream('tokentx', address, state.tokenPage, streamLimit, query.fromTimestamp);
 
       const merged = new Map<string, ParsedRecord>();
       for (const record of [...fromTx.records, ...fromToken.records]) {
@@ -196,11 +268,13 @@ export function createExplorerHistoryProvider(
         .slice(0, query.limit)
         .map((record) => ({ hash: record.hash, blockNumber: record.blockNumber }));
 
+      const txDone = state.txDone || !fromTx.full || fromTx.exhaustedByWindow;
+      const tokenDone = state.tokenDone || !fromToken.full || fromToken.exhaustedByWindow;
       const nextState: ExplorerCursorState = {
-        txPage: state.txDone ? state.txPage : state.txPage + 1,
-        tokenPage: state.tokenDone ? state.tokenPage : state.tokenPage + 1,
-        txDone: state.txDone || !fromTx.full,
-        tokenDone: state.tokenDone || !fromToken.full,
+        txPage: txDone ? state.txPage : state.txPage + 1,
+        tokenPage: tokenDone ? state.tokenPage : state.tokenPage + 1,
+        txDone,
+        tokenDone,
       };
       const complete = nextState.txDone && nextState.tokenDone && sorted.length <= query.limit;
       const nextCursor = complete ? undefined : encodeCursor(nextState);

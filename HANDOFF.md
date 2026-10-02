@@ -1,4 +1,4 @@
-# RADAR Handoff
+# RADAR handoff
 
 Updated: 2026-10-02 (Asia/Karachi)
 Repository: C:\Users\Hanzlah\RADAR
@@ -6,49 +6,44 @@ Branch: codex/radar-phase-0-foundation
 
 ## Goal and constraints
 
-Continue RADAR toward its first useful demo: in a private Telegram chat, a user sends one public address and receives a supported 72-hour activity timeline with transaction evidence links, freshness, and honest coverage. The user is learning blockchain, so explain concepts briefly while implementing.
-
-Read radar prompt.md completely and use the developer brief at C:\Users\Hanzlah\Downloads\RADAR_Developer_Brief.pdf for product context. The prompt already contains an updated Telegram-first demo plan. Preserve user work. Never commit to main, deploy, or make blockchain transactions.
+First useful demo: a private Telegram user sends one public address and receives supported 72-hour activity, transaction evidence, freshness and honest coverage. Read `radar prompt.md` and the developer brief at `C:\Users\Hanzlah\Downloads\RADAR_Developer_Brief.pdf`. Preserve existing work, use the current branch, never commit to main, deploy, or make blockchain transactions.
 
 ## Current implementation
 
-Phase 0 foundation is implemented on the requested branch. The repo includes strict TypeScript on Node 22, pnpm lockfile, grammY/Fastify/viem, PostgreSQL 16/Drizzle schema and migrations, Zod config, Pino redaction, Vitest, ESLint/Prettier, Docker Compose, CI, separate bot/worker entry points, chain adapters, repositories, indexer/alerts modules, and docs.
+Phase 0 foundation exists: strict TypeScript/Node 22/pnpm, grammY/Fastify/viem, PostgreSQL 16/Drizzle, bot/worker processes, commands, chain adapters, backfill continuation, coverage, indexing checkpoints/reorgs, alerts/outbox, health and documentation. `/recent` queues uncovered history and reports incompleteness rather than a false empty result. Paused watches count toward the five retained-address limit.
 
-The bot has the required command handlers including /recent. Live history cannot yet be claimed complete. For /recent, missing 72-hour coverage queues a backfill and reports processing/incompleteness rather than returning a false empty timeline.
+This continuation preserved and extended eight uncommitted files from the previous session. Explorer history now guards the documented 10,000-record cap, malformed records/timestamps, failure envelopes and invalid cursor states. Network verification now walks the fixed 72-hour window with a page budget, counts unique candidates, rejects broken continuation, and optionally checks known token-only discovery against canonical receipt/log evidence. New tests cover these behaviors.
 
-Recent fixes:
-- Backfill now stores its continuation cursor and is requeued when its bounded page budget ends. It records coverage/completes only when history is complete. SQL claim rows are aliased to the expected camelCase fields.
-- Paused watches count toward the five retained-address limit.
-- verify:network probes a second history page when a cursor is available.
-- Docs correct the old Blockscout 403 interpretation.
+## Verification
 
-## Verification on 2026-10-02
+- Full Vitest serial run: 133 passed across 20 files (97 unit, 31 PostgreSQL integration, 5 deterministic E2E).
+- Typecheck and production build passed; fixture verifier: 11 checks passed.
+- See STATUS.md for final lint/format/whitespace results and git status for commit state.
+- PostgreSQL initially stopped; started Docker Desktop and the existing `radar-postgres` container on localhost:5433. The full suite then passed.
 
-- Typecheck, production build, ESLint, and Prettier check passed on Node 22.
-- Full Vitest: 120 passed across 18 files (84 unit, 31 PostgreSQL integration, 5 deterministic E2E).
-- Fixture verifier: 11 checks passed.
-- Git diff whitespace check passed before commit.
-- Working tree was staged on codex/radar-phase-0-foundation; commit status should be checked when resuming.
+## Network state and local configuration
 
-## Network/provider state
+An ignored local `.env` contains a Blockscout PRO key and a Telegram token value. Never print or commit credentials. Telegram validity and live messaging remain untested.
 
-Robinhood Chain docs specify chain ID 4663. Read-only public RPC checks on 2026-10-01 returned chain ID, latest/safe/finalized tags, bounded logs, and a sample transaction/receipt.
+Read-only authenticated probe at 2026-10-02T11:48:54Z passed 8 checks; internal transactions unsupported. Fixed window 2026-09-29T11:48:19.438Z through 2026-10-02T11:48:19.438Z for `0x7300d92984d11323e7855ab69b0a4d6613a3ff01`: 8 merged pages, 340 occurrences, 203 unique candidate hashes, both streams completed. Known token-only transaction `0x9485ae07f70df6b8ea65a608425d6043cedbd18ddf242f7d5ec2163385fef285` matched a successful canonical ERC-20 Transfer receipt at block 77960830.
 
-Blockscout documentation reviewed 2026-10-02 describes a candidate authenticated PRO API at https://api.blockscout.com for chain ID 4663. It requires an API key even for free access and exposes distinct address transaction, token-transfer, and internal-transaction endpoints. The previous 403s were from unauthenticated legacy per-instance routes; they do not test PRO API.
+One preceding history probe returned HTTP 500; retry succeeded. This remains a sampled provider-completed window, not proof of all-address completeness or every candidate receipt. Provider retention/live cap behavior and RPC finality mapping remain unverified. Keep `FINALITY_VERIFIED=false`; do not enable indexing. Official docs describe soft confirmation, batch posting and Ethereum finality but do not explicitly map the tested RPC tags.
 
-Authenticated responses, actual paging, record/depth limits, token-only event completeness, and finality semantics remain unverified. Do not enable live indexing until those are verified. No Telegram token or Blockscout API key is configured. No transaction has been sent and nothing has been deployed.
+Verifier settings: `VERIFY_ADDRESS`, `VERIFY_TX_HASH`, optional `VERIFY_TOKEN_TX_HASH` (must still be in the current window), `VERIFY_HISTORY_MAX_PAGES` (default 50, allowed 1..500). Example hash will eventually age outside the window. PRO endpoint tested: `https://api.blockscout.com/v2/api?chainid=4663`.
 
-## Remaining items
+## Remaining work
 
-1. Check git status/branch and read this file plus STATUS.md.
-2. Obtain/configure a Blockscout PRO key locally (never commit it). Probe a known address, transactions and token transfers, and continuation paging. Update docs with exact evidence; keep the feature blocked if pagination/coverage is not proven.
-3. Exercise the live /recent flow once the authenticated history source is verified and Telegram credentials are available.
-4. Review lifecycle cleanup on bot/worker startup failures and durable webhook update acceptance. Do not let those distract from the first history demo.
-5. Keep STATUS.md and docs/ACCEPTANCE.md current. Run the relevant suite before committing further changes.
+1. Verify live record-limit behavior/retention depth and cross-check additional history against bounded canonical logs.
+2. Obtain provider evidence for the public RPC's finality-tag mapping. Keep indexing gated until it is documented.
+3. Exercise live single-address Telegram history only after the gates pass, using a dedicated test chat. Do not send messages to others without authorization.
+4. Review startup-failure cleanup and durable webhook acceptance.
+5. Keep STATUS.md, docs/ACCEPTANCE.md and docs/NETWORK_VERIFICATION.md current; run relevant checks before commits.
 
-Useful checks:
-- C:/Users/Hanzlah/node22-radar.exe node_modules/typescript/bin/tsc --noEmit
-- C:/Users/Hanzlah/node22-radar.exe node_modules/typescript/bin/tsc -p tsconfig.build.json
-- C:/Users/Hanzlah/node22-radar.exe node_modules/vitest/vitest.mjs run
+Useful commands (Node 22 executable is local):
 
-To resume in a new Codex CLI session, open C:\Users\Hanzlah\RADAR and say: “Continue RADAR from HANDOFF.md; check the branch and resume with Remaining items 1–3.”
+- `C:/Users/Hanzlah/node22-radar.exe node_modules/typescript/bin/tsc --noEmit`
+- `C:/Users/Hanzlah/node22-radar.exe node_modules/typescript/bin/tsc -p tsconfig.build.json`
+- `C:/Users/Hanzlah/node22-radar.exe node_modules/vitest/vitest.mjs run --no-file-parallelism`
+- `C:/Users/Hanzlah/node22-radar.exe --import tsx src/entrypoints/verify-network.ts`
+
+Do not run database tests against a populated user database; integration/E2E tests truncate their shared local test tables.

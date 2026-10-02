@@ -1,3 +1,4 @@
+import { probeHistoryWindow } from '../chain/verify-history.js';
 import { createChainClient } from '../chain/client.js';
 import { createExplorerHistoryProvider } from '../chain/explorer-history-provider.js';
 import { createRpcBlockProvider } from '../chain/rpc-block-provider.js';
@@ -193,43 +194,89 @@ export async function verifyNetwork(network: NetworkConfig): Promise<NetworkRepo
         apiBaseUrl: explorerBase,
         ...(network.explorerApiKey ? { apiKey: network.explorerApiKey } : {}),
         chainId: network.chainId,
+        pageSize: 50,
       });
       const now = new Date();
       const query = {
         address: verifyAddress.toLowerCase() as `0x${string}`,
         fromTimestamp: new Date(now.getTime() - 72 * 3600 * 1000),
         toTimestamp: now,
-        limit: 5,
+        limit: 100,
       };
-      const firstPage = await provider.getAddressHistory(query);
-      let pagesChecked = 1;
-      let page = firstPage;
-      let continuationAccepted = false;
-      if (firstPage.nextCursor) {
-        page = await provider.getAddressHistory({ ...query, cursor: firstPage.nextCursor });
-        pagesChecked += 1;
-        continuationAccepted = true;
+      const expectedHash = process.env.VERIFY_TOKEN_TX_HASH?.trim();
+      if (expectedHash && !/^0x[0-9a-fA-F]{64}$/.test(expectedHash)) {
+        throw new ProviderError('VERIFY_TOKEN_TX_HASH must be a transaction hash');
       }
-      const candidates = firstPage.transactions.length + page.transactions.length;
+      const maxPages = Number(process.env.VERIFY_HISTORY_MAX_PAGES ?? '50');
+      const evidence = await probeHistoryWindow(
+        provider,
+        query,
+        maxPages,
+        expectedHash as Hash | undefined,
+      );
       checks.push({
         name: 'explorer_history',
-        status: continuationAccepted ? 'ok' : 'unsupported',
-        detail: continuationAccepted
-          ? 'Fetched ' +
-            pagesChecked +
-            ' history pages and ' +
-            candidates +
-            ' candidate(s); next-page cursor was accepted. Exhaustive pagination and token-only coverage still require provider-specific confirmation.'
-          : 'Only one history page was available (' +
-            candidates +
-            ' candidate(s)); there was no continuation cursor to exercise pagination.',
+        status: evidence.windowComplete ? 'ok' : 'unsupported',
+        detail: evidence.windowComplete
+          ? 'Provider completed the fixed 72-hour window. This is a provider completion claim; independent token-only and provider-limit checks remain necessary.'
+          : 'History page budget ended before the 72-hour window was complete. Coverage remains BLOCKED.',
         evidence: {
-          pagesChecked,
-          candidates,
-          continuationAccepted,
-          finalPageComplete: page.complete,
+          ...evidence,
+          fromTimestamp: query.fromTimestamp.toISOString(),
+          toTimestamp: query.toTimestamp.toISOString(),
+          maxPages,
         },
       });
+      if (expectedHash) {
+        const receipt = await reader.getReceipt(expectedHash as Hash);
+        const block = await client.getBlock({ blockNumber: receipt.blockNumber });
+        const topicAddress = `0x${'0'.repeat(24)}${query.address.slice(2)}`;
+        const transferSignature =
+          '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
+        const transfer = receipt.logs.find(
+          (log) =>
+            !log.removed &&
+            log.topics.length === 3 &&
+            log.topics[0]?.toLowerCase() === transferSignature &&
+            /^0x[0-9a-fA-F]{64}$/.test(log.data) &&
+            (log.topics[1]?.toLowerCase() === topicAddress ||
+              log.topics[2]?.toLowerCase() === topicAddress),
+        );
+        const timestamp = new Date(Number(block.timestamp) * 1000);
+        const tokenOnly =
+          receipt.from.toLowerCase() !== query.address &&
+          receipt.to?.toLowerCase() !== query.address;
+        const verified =
+          evidence.expectedTransactionFound === true &&
+          receipt.status === 'success' &&
+          receipt.blockHash.toLowerCase() === block.hash?.toLowerCase() &&
+          !!transfer &&
+          tokenOnly &&
+          timestamp >= query.fromTimestamp &&
+          timestamp <= query.toTimestamp;
+        checks.push({
+          name: 'token_only_history',
+          status: verified ? 'ok' : 'failed',
+          detail: verified
+            ? 'Known token-only transaction was discovered and matched a successful canonical ERC-20 Transfer receipt involving the address.'
+            : 'Known token-only transaction was absent, outside the window, or did not match canonical ERC-20 receipt evidence.',
+          evidence: {
+            transactionHash: expectedHash,
+            blockNumber: receipt.blockNumber.toString(),
+            tokenOnly,
+            discovered: evidence.expectedTransactionFound,
+            tokenAddress: transfer?.address ?? null,
+            timestamp: timestamp.toISOString(),
+          },
+        });
+      } else {
+        checks.push({
+          name: 'token_only_history',
+          status: 'skipped',
+          detail:
+            'Set VERIFY_TOKEN_TX_HASH to a known token-only transaction in the requested window to compare discovery with its canonical receipt.',
+        });
+      }
     } catch (error) {
       checks.push({
         name: 'explorer_history',

@@ -14,4 +14,4 @@ Use Node 22.23.3 and pnpm 11.13.1. Copy .env.example to .env; start PostgreSQL 1
 
 Offline commands require no Telegram or chain credentials: pnpm typecheck, pnpm lint, pnpm format:check, pnpm test, pnpm verify:fixtures and pnpm build. PostgreSQL suites are pnpm test:integration and pnpm test:e2e. Run bot/worker with pnpm dev:bot and pnpm dev:worker.
 
-See docs/NETWORK_VERIFICATION.md and docs/COVERAGE.md. Public history endpoints returned 403 during initial checks; live 72-hour timeline remains gated on a verified provider.
+See docs/NETWORK_VERIFICATION.md and docs/COVERAGE.md. Blockscout documents a key-required PRO API for Robinhood Chain; a sampled authenticated 72-hour walk and token-only receipt comparison passed. Live indexing remains gated on provider limits, retention depth, broader event coverage and finality mapping.
