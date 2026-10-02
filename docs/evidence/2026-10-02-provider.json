@@ -1,0 +1,455 @@
+{
+  "checkedOn": "2026-10-02",
+  "scope": "Read-only sampled provider feasibility; no live indexing enabled",
+  "sources": [
+    "https://docs.blockscout.com/devs/apis/rpc/account",
+    "https://docs.arbitrum.io/how-arbitrum-works/reference/finality-and-reorgs",
+    "https://docs.robinhood.com/chain/run-a-full-node/",
+    "https://cdn.robinhood.com/assets/generated_assets/hoodchain_docsite/chain-node-configs/robinhood-chain-info.json",
+    "https://raw.githubusercontent.com/OffchainLabs/nitro-contracts/main/src/bridge/ISequencerInbox.sol",
+    "https://ethereum.publicnode.com/"
+  ],
+  "endpoints": {
+    "l2Rpc": "https://rpc.mainnet.chain.robinhood.com",
+    "history": "https://api.blockscout.com/v2/api?chainid=4663",
+    "l1Rpc": "https://ethereum-rpc.publicnode.com"
+  },
+  "observations": [
+    {
+      "generatedAt": "2026-10-02T12:45:06.865Z",
+      "checks": [
+        {
+          "name": "oldest_txlist",
+          "address": "0x7300d92984d11323e7855ab69b0a4d6613a3ff01",
+          "count": 5,
+          "first": {
+            "hash": "0xd8071a12155bd3b6304cf236aa58bff8d4a28f409e7c055e58bc81304a1380b2",
+            "blockNumber": "77356058",
+            "timestamp": "2026-10-01T11:57:32.000Z"
+          },
+          "receiptFound": true,
+          "receiptMatchesBlock": true,
+          "rpcTimestamp": "2026-10-01T11:57:32.000Z"
+        },
+        {
+          "name": "oldest_tokentx",
+          "address": "0x7300d92984d11323e7855ab69b0a4d6613a3ff01",
+          "count": 5,
+          "first": {
+            "hash": "0xe5ec4855d3628286cb0cbf8849cc6fb9af983a0a6b522866e8f698e8bbda4890",
+            "blockNumber": "77359208",
+            "timestamp": "2026-10-01T12:02:47.000Z"
+          },
+          "receiptFound": true,
+          "receiptMatchesBlock": true,
+          "rpcTimestamp": "2026-10-01T12:02:47.000Z"
+        },
+        {
+          "name": "historical_block_earliest",
+          "failure": null,
+          "number": "0x0",
+          "hash": "0xaad15f3d702aaea00caf3e9bb56395efe9127bc3b31b24921abf1eee3409305c",
+          "timestamp": "1970-01-01T00:00:00.000Z"
+        },
+        {
+          "name": "historical_block_0x1",
+          "failure": null,
+          "number": "0x1",
+          "hash": "0x9aa0490ae173e16a453c8afe2ad51b29fb30949537d0905919d259a43e0b4145",
+          "timestamp": "2026-04-30T16:52:11.000Z"
+        }
+      ]
+    },
+    {
+      "generatedAt": "2026-10-02T12:46:35.099Z",
+      "checks": [
+        {
+          "name": "contract_oldest_txlist",
+          "token": "0x5fc5360d0400a0fd4f2af552add042d716f1d168",
+          "first": {
+            "hash": "0xc51b4ac115d158a50eb9cb902a9d1359d25200e3582192f75c0ad80beba54930",
+            "blockNumber": "57",
+            "timestamp": "2026-05-05T17:59:51.000Z"
+          },
+          "receiptFound": true,
+          "receiptMatchesBlock": true,
+          "rpcTimestamp": "2026-05-05T17:59:51.000Z"
+        },
+        {
+          "name": "contract_oldest_tokentx",
+          "token": "0x5fc5360d0400a0fd4f2af552add042d716f1d168",
+          "first": {
+            "hash": "0xeca4759fe907dd3b9ab35f340947d4f4f42be96897c9b1474a3f9284e8bca358",
+            "blockNumber": "433",
+            "timestamp": "2026-05-12T17:50:03.000Z"
+          },
+          "receiptFound": true,
+          "receiptMatchesBlock": true,
+          "rpcTimestamp": "2026-05-12T17:50:03.000Z"
+        }
+      ]
+    },
+    {
+      "generatedAt": "2026-10-02T12:52:18.355Z",
+      "checks": [
+        {
+          "name": "txlist_position_10000",
+          "token": "0x5fc5360d0400a0fd4f2af552add042d716f1d168",
+          "page": 10000,
+          "offset": 1,
+          "failure": null,
+          "status": "1",
+          "resultText": null,
+          "responseArray": true,
+          "count": 1,
+          "first": {
+            "hash": "0x23bfbd427c3d67d301c341ff7affbc6d3ac8c86be252e907c13455b39a8759c7",
+            "blockNumber": "78049854",
+            "timestamp": "2026-10-02T07:23:01.000Z"
+          }
+        },
+        {
+          "name": "txlist_position_10001",
+          "token": "0x5fc5360d0400a0fd4f2af552add042d716f1d168",
+          "page": 10001,
+          "offset": 1,
+          "failure": null,
+          "status": "0",
+          "resultText": null,
+          "responseArray": false,
+          "count": 0,
+          "first": null
+        },
+        {
+          "name": "tokentx_position_10000",
+          "token": "0x5fc5360d0400a0fd4f2af552add042d716f1d168",
+          "page": 10000,
+          "offset": 1,
+          "failure": null,
+          "status": "1",
+          "resultText": null,
+          "responseArray": true,
+          "count": 1,
+          "first": {
+            "hash": "0x9241cffd058f8f31dbc7483a32a3365293547050a3160bd4556a245fd34e949a",
+            "blockNumber": "78241504",
+            "timestamp": "2026-10-02T12:46:03.000Z"
+          }
+        },
+        {
+          "name": "tokentx_position_10001",
+          "token": "0x5fc5360d0400a0fd4f2af552add042d716f1d168",
+          "page": 10001,
+          "offset": 1,
+          "failure": null,
+          "status": "0",
+          "resultText": null,
+          "responseArray": false,
+          "count": 0,
+          "first": null
+        }
+      ]
+    },
+    {
+      "generatedAt": "2026-10-02T12:59:09.446Z",
+      "checks": [
+        {
+          "name": "txlist_offset2_page_5000",
+          "token": "0x5fc5360d0400a0fd4f2af552add042d716f1d168",
+          "page": 5000,
+          "offset": 2,
+          "failure": null,
+          "status": "1",
+          "providerMessage": "OK",
+          "responseArray": true,
+          "count": 2
+        },
+        {
+          "name": "txlist_offset2_page_5001",
+          "token": "0x5fc5360d0400a0fd4f2af552add042d716f1d168",
+          "page": 5001,
+          "offset": 2,
+          "failure": null,
+          "status": "0",
+          "providerMessage": "Result window is too large, PageNo x Offset size must be less than or equal to 10000",
+          "responseArray": false,
+          "count": 0
+        },
+        {
+          "name": "tokentx_offset2_page_5000",
+          "token": "0x5fc5360d0400a0fd4f2af552add042d716f1d168",
+          "page": 5000,
+          "offset": 2,
+          "failure": null,
+          "status": "1",
+          "providerMessage": "OK",
+          "responseArray": true,
+          "count": 2
+        },
+        {
+          "name": "tokentx_offset2_page_5001",
+          "token": "0x5fc5360d0400a0fd4f2af552add042d716f1d168",
+          "page": 5001,
+          "offset": 2,
+          "failure": null,
+          "status": "0",
+          "providerMessage": "Result window is too large, PageNo x Offset size must be less than or equal to 10000",
+          "responseArray": false,
+          "count": 0
+        }
+      ]
+    },
+    {
+      "generatedAt": "2026-10-02T12:57:48.196Z",
+      "checks": [
+        {
+          "name": "bounded_log_comparison",
+          "address": "0x7300d92984d11323e7855ab69b0a4d6613a3ff01",
+          "fromBlock": "77359158",
+          "toBlock": "77359258",
+          "rpcFailed": false,
+          "erc20LogOccurrences": 1,
+          "uniqueRpcTransactions": 1,
+          "explorerRows": 1,
+          "explorerComplete": true,
+          "eventMismatches": [],
+          "exactMatch": true
+        }
+      ]
+    },
+    {
+      "generatedAt": "2026-10-02T12:48:44.590Z",
+      "checks": [
+        {
+          "name": "client_version",
+          "result": "nitro/v3.12.1-rc.2+70fa99a-20260929T140226Z/linux-amd64/go1.25.12"
+        },
+        {
+          "name": "tag_latest",
+          "failure": null,
+          "number": "0x4a9e4e8",
+          "hash": "0x9555cf0ef2ec2a61c1a27386b0e14d2d0265e0c1af6a18e1518b1d908cc333ab",
+          "timestamp": "2026-10-02T12:48:40.000Z",
+          "l1BlockNumber": "0x18e53a5"
+        },
+        {
+          "name": "tag_safe",
+          "failure": null,
+          "number": "0x4a9ccfe",
+          "hash": "0x4c56879456f26231b91adc1c7275117b34af5f0567aca467a132b971456716fd",
+          "timestamp": "2026-10-02T12:38:26.000Z",
+          "l1BlockNumber": "0x18e5372"
+        },
+        {
+          "name": "tag_finalized",
+          "failure": null,
+          "number": "0x4a9ba29",
+          "hash": "0x3a4b62572b6bd0d3a3bdd4d8970cb7b60540938270a54a4c4513703e25b86b60",
+          "timestamp": "2026-10-02T12:30:19.000Z",
+          "l1BlockNumber": "0x18e534a"
+        }
+      ]
+    },
+    {
+      "generatedAt": "2026-10-02T12:50:30.858Z",
+      "checks": [
+        {
+          "name": "arb_findBatchContainingBlock",
+          "blockNumber": "78232105",
+          "result": {
+            "failure": "RPC error",
+            "code": -32601
+          }
+        },
+        {
+          "name": "arb_getL1Confirmations",
+          "blockNumber": "78232105",
+          "result": {
+            "failure": "RPC error",
+            "code": -32601
+          }
+        },
+        {
+          "name": "batch_metadata",
+          "path": "4663/api/v2/transactions/0x9485ae07f70df6b8ea65a608425d6043cedbd18ddf242f7d5ec2163385fef285",
+          "failure": null,
+          "keys": [
+            "priority_fee",
+            "raw_input",
+            "is_pending_update",
+            "result",
+            "hash",
+            "max_fee_per_gas",
+            "revert_reason",
+            "confirmation_duration",
+            "transaction_burnt_fee",
+            "type",
+            "token_transfers_overflow",
+            "confirmations",
+            "position",
+            "max_priority_fee_per_gas",
+            "transaction_tag",
+            "created_contract",
+            "value",
+            "from",
+            "gas_used",
+            "status",
+            "to",
+            "authorization_list",
+            "method",
+            "fee",
+            "arbitrum",
+            "gas_limit",
+            "gas_price",
+            "decoded_input",
+            "fhe_operations_count",
+            "token_transfers",
+            "base_fee_per_gas",
+            "timestamp",
+            "nonce",
+            "historic_exchange_rate",
+            "transaction_types",
+            "exchange_rate",
+            "block_number",
+            "has_error_in_internal_transactions"
+          ],
+          "arbitrum": {
+            "batch_data_container": "in_blob4844",
+            "batch_number": 298691,
+            "commitment_transaction": {
+              "hash": "0xe3474f7e780a6764601bad5117c7af250959247a520c718331186438b72849eb",
+              "status": "finalized",
+              "timestamp": "2026-10-02T04:52:47.000000Z"
+            },
+            "confirmation_transaction": {
+              "hash": null,
+              "status": null,
+              "timestamp": null
+            },
+            "contains_message": null,
+            "gas_used_for_l1": "27",
+            "gas_used_for_l2": "294670",
+            "message_related_info": {},
+            "network_fee": "10278089600000",
+            "poster_fee": "941760000",
+            "status": "Sent to base"
+          },
+          "arbitrum_batch": null
+        },
+        {
+          "name": "batch_metadata",
+          "path": "4663/api/v2/blocks/78232105",
+          "failure": null,
+          "keys": [
+            "arbitrum",
+            "base_fee_per_gas",
+            "burnt_fees",
+            "burnt_fees_percentage",
+            "difficulty",
+            "gas_limit",
+            "gas_target_percentage",
+            "gas_used",
+            "gas_used_percentage",
+            "hash",
+            "height",
+            "internal_transactions_count",
+            "is_pending_update",
+            "miner",
+            "nonce",
+            "parent_hash",
+            "priority_fee",
+            "rewards",
+            "size",
+            "timestamp",
+            "total_difficulty",
+            "transaction_fees",
+            "transactions_count",
+            "type",
+            "uncles_hashes",
+            "withdrawals_count"
+          ],
+          "arbitrum": {
+            "batch_data_container": "in_blob4844",
+            "batch_number": 299358,
+            "commitment_transaction": {
+              "hash": "0x59b11fa31fc0ad820965522cde4a2e0f34c459a0e0afade2a4c645242abc2fa4",
+              "status": "finalized",
+              "timestamp": "2026-10-02T12:32:11.000000Z"
+            },
+            "confirmation_transaction": {
+              "hash": null,
+              "status": null,
+              "timestamp": null
+            },
+            "delayed_messages": 343972,
+            "l1_block_number": 26104650,
+            "send_count": 2931,
+            "send_root": "0x352f6d23408b902f1d27886b0695284a9d7c564353f4b1c09354d6eb89b2167d",
+            "status": "Sent to base"
+          },
+          "arbitrum_batch": null
+        }
+      ]
+    },
+    {
+      "generatedAt": "2026-10-02T12:56:39.749Z",
+      "checks": [
+        {
+          "name": "finalized_batch_l1_comparison",
+          "l2Number": "0x4a9ccfe",
+          "l2Hash": "0x4c56879456f26231b91adc1c7275117b34af5f0567aca467a132b971456716fd",
+          "l2Time": "2026-10-02T12:38:26.000Z",
+          "batch": 299387,
+          "commitmentTransaction": "0xe72bf89e397e2aa9b71ba012bd37d18effd6cbfab230585f5c4d882652bd2848",
+          "l1ChainId": "0x1",
+          "l1FinalizedNumber": "0x18e5375",
+          "l1FinalizedFailure": null,
+          "l1FinalizedErrorCode": null,
+          "l1ReceiptFailure": null,
+          "l1ReceiptBlock": "0x18e5375",
+          "l1ReceiptStatus": "0x1",
+          "canonicalReceiptMatch": true,
+          "batchEventMatched": true,
+          "postingBlockFinalized": true,
+          "batchInfo": {
+            "after_acc_hash": "0xa67b8db439a3046841ec97667b8b63985fd201c3b5e3af90a420408cf6a20689",
+            "before_acc_hash": "0x90aa83b1bb532f405042a630a89b7ca40bf77acdf06c13fab0d03607feb8db32",
+            "commitment_transaction": {
+              "block_number": 26104693,
+              "hash": "0xe72bf89e397e2aa9b71ba012bd37d18effd6cbfab230585f5c4d882652bd2848",
+              "status": "finalized",
+              "timestamp": "2026-10-02T12:38:47.000000Z"
+            },
+            "data_availability": {
+              "batch_data_container": "in_blob4844"
+            },
+            "end_block_number": 78236926,
+            "number": 299387,
+            "start_block_number": 78236708,
+            "transactions_count": 2834
+          }
+        }
+      ]
+    }
+  ],
+  "additionalExactLogComparison": {
+    "name": "bounded_log_comparison",
+    "address": "0x7300d92984d11323e7855ab69b0a4d6613a3ff01",
+    "fromBlock": "77960697",
+    "toBlock": "77960797",
+    "rpcFailed": false,
+    "erc20LogOccurrences": 3,
+    "uniqueRpcTransactions": 1,
+    "explorerRows": 3,
+    "explorerComplete": true,
+    "eventMismatches": [],
+    "exactMatch": true
+  },
+  "limitations": [
+    "Token-contract-wide cap/retention probes are samples, not all-address completeness guarantees.",
+    "No historical-state reads or complete archive guarantee were tested.",
+    "Explorer batch-to-L2 association was cross-checked with its L1 event; full batch decompression was not performed.",
+    "RPC tags can lag; no alert latency SLA is inferred.",
+    "Internal transfers, Pons and live Telegram remain unverified or unsupported."
+  ]
+}

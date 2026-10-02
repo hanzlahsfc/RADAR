@@ -1,6 +1,6 @@
 # RADAR status
 
-**Current phase:** Phase 0 foundation passes local acceptance. The first Telegram 72-hour demo remains gated; a sampled authenticated history walk and token-only receipt comparison now pass.
+**Current phase:** Phase 0 foundation passes local acceptance. Read-only provider feasibility is documented and sampled: history, cap/retention, exact log comparisons and finalized batch posting on Ethereum passed. The controlled Telegram demo is next; indexing remains disabled.
 
 ## Completed tasks
 
@@ -31,18 +31,29 @@
 - Token-only example `0x9485ae07f70df6b8ea65a608425d6043cedbd18ddf242f7d5ec2163385fef285` was discovered and verified against canonical successful receipt/log evidence at block 77960830.
 - A prior probe encountered explorer HTTP 500; a subsequent read-only retry passed. Another transfer correctly failed the token-only assertion because it involved the address at the top level.
 - Chain ID 4663, latest/safe/finalized block reads, sampled receipt and bounded logs passed.
-- Official finality documentation reviewed again: stages are described, but the tested RPC's tag mapping is not explicit. Live indexing remains disabled with `FINALITY_VERIFIED=false`.
+- The initial finality record lacked a tag mapping. Follow-up Arbitrum documentation plus Nitro identity, official Ethereum parent configuration, and the L1 posting comparison now support a finalized demo policy. Live indexing remains disabled with `FINALITY_VERIFIED=false`.
 
 ## Skipped checks and blockers
 
-- Arbitrary-address/all-event completeness, retention depth and live record-cap behavior remain unverified. The successful walk is a sample, not a universal completeness claim.
-- Provider-specific finality mapping remains unverified.
+- Broad all-address/all-event completeness and archive state remain unverified. Live cap behavior and historical receipt/block samples now pass; cap splitting for busy addresses remains pending.
+- Finalized mapping is documented by Arbitrum and corroborated with a sampled Ethereum posting receipt. Safe mapping was not independently compared with an Ethereum safe head.
 - Internal/trace-derived transfers remain unsupported by the adapter.
 - Live Telegram smoke: not run. A token value is present locally; validity and messaging have not been checked.
 - Pons factory/ABI/launch receipt remains unverified; launch alerts disabled.
 - Hosted GitHub Actions and Docker application-image build were not run.
 - Bot/worker startup cleanup and durable webhook acceptance review remain queued.
 
+## Provider follow-up verification (2026-10-02)
+
+- Both transaction and contract-wide token streams accepted page 5,000 with offset 2 and rejected page 5,001: page multiplied by offset must not exceed 10,000. Offset-1 positions 10,000/10,001 showed the same boundary.
+- Old contract transaction at block 57 (2026-05-05) and token transfer at block 433 (2026-05-12) matched canonical RPC receipts/blocks. Public RPC returned block 1 dated 2026-04-30. These are retention samples, not full archive guarantees.
+- Exact ERC-20 occurrence comparisons over 77960697..77960797 (3 events) and 77359158..77359258 (1 event) matched token/address/amount data with no discrepancies.
+- Public node identifies as Nitro. Arbitrum documents finalized parent-batch inheritance for Dedicated Blockchains; Robinhood's official config specifies Ethereum parent chain 1.
+- Sampled L2 finalized block 78236926 belongs to batch 299387. Its posting transaction `0xe72bf89e397e2aa9b71ba012bd37d18effd6cbfab230585f5c4d882652bd2848` succeeded in canonical Ethereum block 26104693, at the Ethereum finalized head, with a matching event from the official Sequencer Inbox.
+- Nitro batch RPC methods were unavailable. Authenticated explorer association and public Ethereum RPC supplied the comparison. Full batch decompression was not performed.
+- Sanitized public evidence: `docs/evidence/2026-10-02-provider.json`.
+- This follow-up changes documentation/evidence only. Evidence consistency, credential exclusion, Prettier and git whitespace checks passed. Previous 133-test implementation result remains the latest full suite.
+
 ## Next atomic task
 
-Verify provider retention and record-limit behavior, cross-check further history against bounded canonical logs, and obtain evidence mapping public RPC tags to chain finality stages. Keep live indexing gated. After those pass, exercise the single-address Telegram timeline using a dedicated test chat.
+Prepare a controlled single-address Telegram demo using the tested history source and `FINALITY_MODE=finalized`. Establish a dedicated private test chat and authorization for messaging, validate the local token, then exercise `/recent` with receipt-linked results and coverage. Keep the measured 10,000-record restriction explicit; add block-window splitting before claiming broad busy-address coverage. Do not enable indexing during preparation alone.

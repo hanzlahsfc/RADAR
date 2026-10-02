@@ -22,3 +22,11 @@ Never turn incomplete pagination or provider failure into an empty successful ti
 ## Read-only Blockscout history check
 
 Create a free PRO API key at https://dev.blockscout.com (Blockscout says the free tier does not require a credit card). Keep the key in the ignored local .env file; do not paste it into chat or commit it. Set CHAIN_ID=4663, RPC_HTTP_URL=https://rpc.mainnet.chain.robinhood.com, EXPLORER_BASE_URL=https://robinhoodchain.blockscout.com, EXPLORER_API_BASE_URL=https://api.blockscout.com/v2/api?chainid=4663, and EXPLORER_API_KEY=<your-key>. Set VERIFY_ADDRESS to a known busy Robinhood Chain address and VERIFY_TX_HASH to a known transaction hash, then run pnpm verify:network. This command only reads chain data. Set VERIFY_TOKEN_TX_HASH to a known token-only ERC-20 transaction within the current 72-hour window. VERIFY_HISTORY_MAX_PAGES defaults to 50 (1..500); the verifier walks all pages until both streams complete or the budget ends, and compares the known transaction with its successful canonical receipt. Reaching the budget is explicitly incomplete. A sampled success does not prove arbitrary-address coverage, retention depth, live cap behavior or finality semantics. Record actual responses and gaps in docs/NETWORK_VERIFICATION.md before enabling live indexing.
+
+## Controlled demo preparation
+
+The provider feasibility record now includes measured cap behavior, old receipts/blocks, bounded exact ERC-20 comparisons, and sampled finalized batch posting on Ethereum. See docs/NETWORK_VERIFICATION.md and docs/evidence/2026-10-02-provider.json. The controlled demo should use FINALITY_MODE=finalized. FINALITY_VERIFIED remains false in the local setup until demo configuration is prepared; read-only probes do not change it.
+
+Keep results incomplete when a history stream reaches the measured page multiplied by offset limit of 10,000 before the requested start. Block-window splitting for busy addresses is pending. Historical receipt/block samples do not establish complete archive state.
+
+Live Telegram checks require a dedicated private test chat and authorization to send messages there. The local token value has not been validated. Do not register a webhook or start polling for a token until its intended test use is established.

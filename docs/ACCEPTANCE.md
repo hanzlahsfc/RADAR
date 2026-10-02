@@ -14,12 +14,15 @@
 | Separate bot/worker processes and health endpoints | Implemented | Entry points and Fastify live/ready handlers |
 | Official network/finality docs reviewed | Tested | docs/NETWORK_VERIFICATION.md |
 | Actual public RPC responses | Tested, partial | Chain ID, blocks, logs, transaction and receipt on 2026-10-01 |
-| Provider finality semantics | Unverified | safe/finalized return blocks; economic meaning not mapped |
+| Finalized policy | Documented; sampled corroboration | Nitro mapping, official Ethereum parent configuration, and successful canonical batch-posting receipt at Ethereum finalized head |
+| Safe policy | Documented; live mapping not cross-checked | Arbitrum reference describes parent-safe inheritance; no independent safe-head comparison |
 | History provider discovery | Tested, sampled | Configured Etherscan-compatible Blockscout PRO route tested with a local key; separate transaction and token streams |
 | Sampled 72-hour pagination and token-only discovery | Tested | 8 merged pages, 203 unique candidates; known token-only Transfer matched successful canonical receipt on 2026-10-02 |
-| History depth, live record limits, and broad completeness | Unverified | Documented 10,000-record cap guarded; live cap/depth and all-event completeness not proven |
+| Provider cap and sampled retention | Tested | Both streams reject page multiplied by offset above 10,000; May receipts/blocks matched |
+| Exact bounded ERC-20 history | Tested, sampled | Two fixed 101-block windows: 3 and 1 event occurrences matched amounts/counterparties with no differences |
+| Broad history completeness/archive state | Unverified | Samples do not prove every address/event or historical state; cap splitting pending |
 | False history completion rejection | Tested | Regression tests reject malformed records, invalid cursor state, failure envelopes, cap truncation and broken continuation |
-| Arbitrary address 72-hour history | Blocked | Needs verified archive provider with token-only coverage |
+| Arbitrary address 72-hour history | Restricted | Tested sample passes; busy addresses can reach 10,000-record cap and must remain incomplete |
 | Live Telegram integration | Unverified | Token present locally; validity and live Telegram flow not checked |
 | Pons factory/ABI/launch verification | Blocked | No authoritative deployment/receipt established |
 | CI | Implemented | Workflow exists; hosted CI run pending |
